@@ -16,7 +16,6 @@ package mod_kafka
 
 import (
 	"fmt"
-	"sort"
 	"sync"
 
 	bfe_access_pb "github.com/bfenetworks/bfe-access-pb/bfe_access_pb"
@@ -659,7 +658,6 @@ func registerAllFields() {
 		isZeroString,
 	)
 
-	//require : sort by tagname
 	registerField("ai_apikeytags", "[]object", false, true,
 		func(bfeLog *bfe_access_pb.BfeLog) interface{} {
 			if reqLog := bfeLog.GetRequestLog(); reqLog != nil {
@@ -671,9 +669,6 @@ func registerAllFields() {
 						Tagvalue: t.GetTagvalue(),
 					})
 				}
-				sort.Slice(result, func(i, j int) bool {
-					return result[i].Tagname < result[j].Tagname
-				})
 				return result
 			}
 			return []ApikeyTagJSON{}
@@ -787,10 +782,7 @@ func registerAllFields() {
 		func(bfeLog *bfe_access_pb.BfeLog) interface{} {
 			if reqLog := bfeLog.GetRequestLog(); reqLog != nil {
 				qls := reqLog.GetAiAuthRejectQuotaPlans()
-				sorted := make([]string, len(qls))
-				copy(sorted, qls)
-				sort.Strings(sorted)
-				return sorted
+				return qls
 			}
 			return []string{}
 		},
