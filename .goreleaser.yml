@@ -18,6 +18,8 @@ builds:
   -
     main: ./main/
     binary: bin/log-reader
+    env:
+      - CGO_ENABLED=0
     goos:
       # - darwin
       - linux
