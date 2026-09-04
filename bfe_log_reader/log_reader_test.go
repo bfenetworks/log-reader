@@ -61,7 +61,7 @@ func TestNewLogFileReader(t *testing.T) {
 	}
 }
 
-func TestLogFileReader_logFileOpen(t *testing.T) {
+func TestLogFileReader_LogFileOpen(t *testing.T) {
 	data, err := ioutil.ReadFile("test_data/pb_access_1.log")
 	if err != nil {
 		t.Fatal("fail to open testing data")
@@ -69,11 +69,11 @@ func TestLogFileReader_logFileOpen(t *testing.T) {
 	path := createTempLogFile(t, data)
 
 	lr := newLogFileReader(path, nil, "")
-	if err := lr.logFileOpen(); err != nil {
-		t.Fatalf("logFileOpen failed: %v", err)
+	if err := lr.LogFileOpen(); err != nil {
+		t.Fatalf("LogFileOpen failed: %v", err)
 	}
-	if lr.logFd == nil {
-		t.Fatal("logFd should not be nil")
+	if lr.LogFd == nil {
+		t.Fatal("LogFd should not be nil")
 	}
 	if lr.fileInfo == nil {
 		t.Fatal("fileInfo should not be nil")
@@ -84,9 +84,9 @@ func TestLogFileReader_logFileOpen(t *testing.T) {
 	lr.logFdClose()
 }
 
-func TestLogFileReader_logFileOpen_NotExist(t *testing.T) {
+func TestLogFileReader_LogFileOpen_NotExist(t *testing.T) {
 	lr := newLogFileReader("/nonexistent/path/pb_access.log", nil, "")
-	if err := lr.logFileOpen(); err == nil {
+	if err := lr.LogFileOpen(); err == nil {
 		t.Error("expected error for non-existent file")
 	}
 }
@@ -102,7 +102,7 @@ func TestLogFileReader_fRead(t *testing.T) {
 	path := createTempLogFile(t, data)
 
 	lr := newLogFileReader(path, nil, "")
-	if err := lr.logFileOpen(); err != nil {
+	if err := lr.LogFileOpen(); err != nil {
 		t.Fatal(err)
 	}
 	defer lr.logFdClose()
@@ -119,7 +119,7 @@ func TestLogFileReader_fRead(t *testing.T) {
 func TestLogFileReader_fRead_ExceedMax(t *testing.T) {
 	path := createTempLogFile(t, []byte("test"))
 	lr := newLogFileReader(path, nil, "")
-	if err := lr.logFileOpen(); err != nil {
+	if err := lr.LogFileOpen(); err != nil {
 		t.Fatal(err)
 	}
 	defer lr.logFdClose()
@@ -137,7 +137,7 @@ func TestLogFileReader_isLogCut(t *testing.T) {
 	path := createTempLogFile(t, data)
 
 	lr := newLogFileReader(path, nil, "")
-	if err := lr.logFileOpen(); err != nil {
+	if err := lr.LogFileOpen(); err != nil {
 		t.Fatal(err)
 	}
 	defer lr.logFdClose()

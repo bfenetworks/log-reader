@@ -15,12 +15,15 @@
 package common
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -29,9 +32,10 @@ const binCacheDir = ".integration-test-bin"
 
 // ProcessEnv manages the log-reader binary and runtime directories.
 type ProcessEnv struct {
-	t       *testing.T
-	workDir string
-	binPath string
+	t             *testing.T
+	workDir       string
+	binPath       string
+	pblogToolPath string
 }
 
 // NewProcessEnv creates a new test environment.
@@ -126,6 +130,97 @@ func (p *ProcessEnv) StartLogReader(confDir, logDir string) (int, func()) {
 	// Wait briefly for the process to start listening.
 	time.Sleep(500 * time.Millisecond)
 	return monitorPort, stop
+}
+
+// BuildPblogTool compiles the bfe-pblog-tool binary and caches it alongside log-reader.
+func (p *ProcessEnv) BuildPblogTool() {
+	t := p.t
+	t.Helper()
+
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		t.Fatalf("find repo root failed: %v", err)
+	}
+
+	cacheDir := filepath.Join(repoRoot, "tests", "integration", binCacheDir)
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		t.Fatalf("create bin cache dir failed: %v", err)
+	}
+
+	binName := "bfe-pblog-tool" + goosBinSuffix()
+	p.pblogToolPath = filepath.Join(cacheDir, binName)
+
+	// Rebuild if binary does not exist.
+	if _, err := os.Stat(p.pblogToolPath); err == nil {
+		t.Logf("using cached pblog-tool binary: %s", p.pblogToolPath)
+		return
+	}
+
+	t.Logf("building bfe-pblog-tool binary...")
+	cmd := exec.Command("go", "build", "-o", p.pblogToolPath, "./cmd/bfe-pblog-tool")
+	cmd.Dir = repoRoot
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("build bfe-pblog-tool failed: %v", err)
+	}
+}
+
+// RunPblogTool runs the bfe-pblog-tool binary with given args and returns stdout, stderr, exitCode, and error.
+func (p *ProcessEnv) RunPblogTool(args ...string) (stdout string, stderr string, exitCode int, err error) {
+	cmd := exec.Command(p.pblogToolPath, args...)
+	var outBuf, errBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
+
+	err = cmd.Run()
+	stdout = outBuf.String()
+	stderr = errBuf.String()
+
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			exitCode = -1
+		}
+		return
+	}
+
+	exitCode = 0
+	return
+}
+
+// StartPblogTool starts bfe-pblog-tool in background (for follow mode tests).
+// Returns stdout pipe (io.Reader), the *exec.Cmd, and a stop function.
+func (p *ProcessEnv) StartPblogTool(args ...string) (stdout io.Reader, cmd *exec.Cmd, stop func(), err error) {
+	cmd = exec.Command(p.pblogToolPath, args...)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("stdout pipe failed: %w", err)
+	}
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		return nil, nil, nil, fmt.Errorf("start pblog-tool failed: %w", err)
+	}
+
+	stop = func() {
+		if cmd.Process != nil {
+			cmd.Process.Signal(syscall.SIGINT)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			done := make(chan error, 1)
+			go func() { done <- cmd.Wait() }()
+			select {
+			case <-done:
+			case <-ctx.Done():
+				cmd.Process.Kill()
+				cmd.Wait()
+			}
+		}
+	}
+
+	return stdoutPipe, cmd, stop, nil
 }
 
 // Cleanup removes the work directory.
