@@ -34,11 +34,11 @@ func NewPbLogReader(logPath string, state *module_state2.State, clusterName stri
 }
 
 // parse records from the data buffer
-func (lr *PbLogReader) dataBufferParse() []*bfe_access_pb.BfeLog {
+func (lr *PbLogReader) DataBufferParse() []*bfe_access_pb.BfeLog {
 	var records []*bfe_access_pb.BfeLog
 
 	// parse pb record from buffer
-	records, lr.dataBuffer = pbBuffParse(lr.dataBuffer, lr.state)
+	records, lr.DataBuffer = PbBuffParse(lr.DataBuffer, lr.state)
 
 	lr.state.Inc("SUM_PB_RECORD", len(records))
 
@@ -59,7 +59,7 @@ func (lr *PbLogReader) logRead() ([]*bfe_access_pb.BfeLog, error) {
 	var hasNewLog bool
 
 	// check whether file is open
-	if lr.logFd == nil {
+	if lr.LogFd == nil {
 		// check whether file exist
 		_, err = os.Stat(lr.logPath)
 		if os.IsNotExist(err) {
@@ -67,21 +67,21 @@ func (lr *PbLogReader) logRead() ([]*bfe_access_pb.BfeLog, error) {
 		}
 
 		// if not open, or sth goes wrong
-		lr.dataBuffer = nil
+		lr.DataBuffer = nil
 		lr.logRelocate()
 
-		if lr.logFd == nil {
+		if lr.LogFd == nil {
 			// Error happens
 			return nil, fmt.Errorf("logRelocate() fail")
 		}
 	}
 
 	// read data from opened log file
-	data, err = lr.fileRead(MAX_BUFF_SIZE)
+	data, err = lr.FileRead(MAX_BUFF_SIZE)
 	lr.state.Inc("SUM_READ_DATA", 1)
 	if err != nil {
 		// Error happens
-		return nil, fmt.Errorf("fileRead() fail:%s", err.Error())
+		return nil, fmt.Errorf("FileRead() fail:%s", err.Error())
 	}
 
 	if len(data) == 0 {
@@ -91,21 +91,21 @@ func (lr *PbLogReader) logRead() ([]*bfe_access_pb.BfeLog, error) {
 		// End Of File
 		hasNewLog, data, err = lr.eofHandler()
 		if err == nil && len(data) != 0 {
-			lr.dataBuffer = append(lr.dataBuffer, data...)
+			lr.DataBuffer = append(lr.DataBuffer, data...)
 
 			// parse records from the data buffer
-			records = lr.dataBufferParse()
+			records = lr.DataBufferParse()
 		}
 
 		// clear the read buffer, if there is new log file
 		if hasNewLog {
-			lr.dataBuffer = nil
+			lr.DataBuffer = nil
 		}
 	} else {
-		lr.dataBuffer = append(lr.dataBuffer, data...)
+		lr.DataBuffer = append(lr.DataBuffer, data...)
 
 		// parse records from the data buffer
-		records = lr.dataBufferParse()
+		records = lr.DataBufferParse()
 	}
 
 	return records, nil

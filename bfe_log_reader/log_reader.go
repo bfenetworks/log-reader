@@ -46,14 +46,14 @@ type LogReader interface {
 
 type LogFileReader struct {
 	logPath  string      // path of pb log file
-	logFd    *os.File    // file descriptor
+	LogFd    *os.File    // file descriptor
 	fileInfo os.FileInfo // fileInfo for pb log file. get from os.Stat()
 	// It is used to detect whether log file is changed
 
 	clusterName string // name of bfe cluster
 
 	initDone   bool   // whether it's just started
-	dataBuffer []byte // buffer to store data read from file
+	DataBuffer []byte // buffer to store data read from file
 
 	state *module_state2.State // for collecting state data
 
@@ -97,16 +97,16 @@ func newLogFileReader(logPath string, state *module_state2.State, clusterName st
 }
 
 /*
-logFileOpen -  Open the log file, file name is lr.logPath
+LogFileOpen -  Open the log file, file name is lr.logPath
 
-If succeed, fd will be stored in lr.logFd, fileInfo will be stored in lr.fileInfo
+If succeed, fd will be stored in lr.LogFd, fileInfo will be stored in lr.fileInfo
 */
-func (lr *LogFileReader) logFileOpen() error {
+func (lr *LogFileReader) LogFileOpen() error {
 	// open log file
 	fd, err := os.Open(lr.logPath)
 	if err != nil {
 		lr.state.Inc("ERR_PB_OPEN", 1)
-		log.Logger.Error("logFileOpen():open(): path:[%s], err:[%s]", lr.logPath, err.Error())
+		log.Logger.Error("LogFileOpen():open(): path:[%s], err:[%s]", lr.logPath, err.Error())
 		return fmt.Errorf("os.Open():%s", err.Error())
 	}
 
@@ -122,13 +122,13 @@ func (lr *LogFileReader) logFileOpen() error {
 		log.Logger.Debug("Open the pb log first time, seek to [%d]", whence)
 		if err != nil {
 			lr.state.Inc("ERR_PB_SEEK", 1)
-			log.Logger.Error("logFileOpen():seek(): path:[%s], err:[%s]", lr.logPath, err.Error())
+			log.Logger.Error("LogFileOpen():seek(): path:[%s], err:[%s]", lr.logPath, err.Error())
 
 			// close file
 			errClose := fd.Close()
 			if errClose != nil {
 				lr.state.Inc("ERR_PB_CLOSE", 1)
-				log.Logger.Warn("logFileOpen():close(): path:[%s], err:[%s]",
+				log.Logger.Warn("LogFileOpen():close(): path:[%s], err:[%s]",
 					lr.logPath, errClose.Error())
 			}
 
@@ -140,13 +140,13 @@ func (lr *LogFileReader) logFileOpen() error {
 	fi, err := fd.Stat()
 	if err != nil {
 		lr.state.Inc("ERR_PB_STAT", 1)
-		log.Logger.Error("logFileOpen():stat(): path:[%s], err:[%s]", lr.logPath, err.Error())
+		log.Logger.Error("LogFileOpen():stat(): path:[%s], err:[%s]", lr.logPath, err.Error())
 
 		// close file
 		errClose := fd.Close()
 		if errClose != nil {
 			lr.state.Inc("ERR_PB_CLOSE", 1)
-			log.Logger.Warn("logFileOpen():close(): path:[%s], err:[%s]",
+			log.Logger.Warn("LogFileOpen():close(): path:[%s], err:[%s]",
 				lr.logPath, errClose.Error())
 		}
 
@@ -154,7 +154,7 @@ func (lr *LogFileReader) logFileOpen() error {
 	}
 
 	// save fd and fi
-	lr.logFd = fd
+	lr.LogFd = fd
 	lr.fileInfo = fi
 
 	// modify flag of initDone
@@ -166,14 +166,14 @@ func (lr *LogFileReader) logFileOpen() error {
 /*
 logRelocate -  relocate to the new log file
 
-Close the old logFd(if logFd is not nil), and open the new logFile.
+Close the old LogFd(if LogFd is not nil), and open the new logFile.
 */
 func (lr *LogFileReader) logRelocate() {
 	lr.state.Inc("PB_LOG_RELOCATE", 1)
 
-	// close the old logFd, if logFd is not nil
-	if lr.logFd != nil {
-		errClose := lr.logFd.Close()
+	// close the old LogFd, if LogFd is not nil
+	if lr.LogFd != nil {
+		errClose := lr.LogFd.Close()
 		log.Logger.Info("logRelocate():close(): path:[%s]", lr.logPath)
 
 		if errClose != nil {
@@ -182,32 +182,32 @@ func (lr *LogFileReader) logRelocate() {
 				lr.logPath, errClose.Error())
 		}
 
-		// set logFd to nil
-		lr.logFd = nil
+		// set LogFd to nil
+		lr.LogFd = nil
 	}
 
 	// open log file again
-	err := lr.logFileOpen()
+	err := lr.LogFileOpen()
 	if err != nil {
-		log.Logger.Error("logRelocate():logFileOpen():%s", err.Error())
+		log.Logger.Error("logRelocate():LogFileOpen():%s", err.Error())
 	} else {
 		log.Logger.Info("logRelocate():log file[%s] is cut and relocated", lr.logPath)
 	}
 }
 
-// closeFileAndInit - close the file, and clear the state
-func (lr *LogFileReader) closeFileAndInit() {
+// CloseFileAndInit - close the file, and clear the state
+func (lr *LogFileReader) CloseFileAndInit() {
 	// close the file
-	err := lr.logFd.Close()
+	err := lr.LogFd.Close()
 	if err != nil {
 		lr.state.Inc("ERR_PB_CLOSE", 1)
-		log.Logger.Warn("closeFileAndInit():close(): path:[%s], err:[%s]",
+		log.Logger.Warn("CloseFileAndInit():close(): path:[%s], err:[%s]",
 			lr.logPath, err.Error())
 	}
 
 	// clear the state
-	lr.logFd = nil
-	lr.dataBuffer = nil
+	lr.LogFd = nil
+	lr.DataBuffer = nil
 	lr.initDone = false
 }
 
@@ -241,10 +241,10 @@ func (lr *LogFileReader) fRead(maxSize int) ([]byte, error) {
 
 	if maxSize == 0 {
 		// read all left data from file
-		data, err = ioutil.ReadAll(lr.logFd)
+		data, err = ioutil.ReadAll(lr.LogFd)
 	} else {
 		// read out maxSize bytes of data
-		n, err = lr.logFd.Read(lr.readBuffer[0:maxSize])
+		n, err = lr.LogFd.Read(lr.readBuffer[0:maxSize])
 		if err == nil {
 			// copy data from buffer to data
 			data = make([]byte, n)
@@ -259,7 +259,7 @@ func (lr *LogFileReader) fRead(maxSize int) ([]byte, error) {
 }
 
 /*
-fileRead - Read data from opened log file
+FileRead - Read data from opened log file
 
 Params:
   - maxSize: max size of bytes to read out ( < MAX_BUFF_SIZE)
@@ -269,15 +269,15 @@ Returns:
 
 	(data, error)
 */
-func (lr *LogFileReader) fileRead(maxSize int) ([]byte, error) {
+func (lr *LogFileReader) FileRead(maxSize int) ([]byte, error) {
 	data, err := lr.fRead(maxSize)
 
 	if err != nil {
 		lr.state.Inc("ERR_PB_READ", 1)
-		log.Logger.Error("fileRead():err in fRead():[%s]", err.Error())
+		log.Logger.Error("FileRead():err in fRead():[%s]", err.Error())
 
 		// close the file and clear the state
-		lr.closeFileAndInit()
+		lr.CloseFileAndInit()
 	}
 
 	return data, err
@@ -305,7 +305,7 @@ func (lr *LogFileReader) eofHandler() (bool, []byte, error) {
 
 	// have new inode
 	// try again to read from old file (all left data)
-	data, err = lr.fileRead(0)
+	data, err = lr.FileRead(0)
 
 	// relocate the log file
 	lr.logRelocate()
@@ -313,12 +313,12 @@ func (lr *LogFileReader) eofHandler() (bool, []byte, error) {
 	return true, data, err
 }
 
-// close logFd held by logReader
+// close LogFd held by logReader
 // This func is ONLY for unit-testing
 func (lr *LogFileReader) logFdClose() {
-	if lr.logFd != nil {
-		lr.logFd.Close()
-		lr.logFd = nil
+	if lr.LogFd != nil {
+		lr.LogFd.Close()
+		lr.LogFd = nil
 	}
 }
 
