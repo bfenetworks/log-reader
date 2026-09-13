@@ -19,9 +19,9 @@ import (
 	"testing"
 )
 
-// test of pbBuffParse(), case 1
+// test of PbBuffParse(), case 1
 // It's the normal situation
-func Test_pbBuffParse_1(t *testing.T) {
+func Test_PbBuffParse_1(t *testing.T) {
 	// read testing data from file
 	data, err := ioutil.ReadFile("test_data/pb_access_1.log")
 	if err != nil {
@@ -30,7 +30,7 @@ func Test_pbBuffParse_1(t *testing.T) {
 	}
 
 	// parse b2log record from data
-	records, buffer := pbBuffParse(data, nil)
+	records, buffer := PbBuffParse(data, nil)
 
 	if len(records) != 9 {
 		t.Errorf("len(records) should be 9, but now it's %d", len(records))
@@ -40,9 +40,9 @@ func Test_pbBuffParse_1(t *testing.T) {
 	}
 }
 
-// test of pbBuffParse(), case 4
+// test of PbBuffParse(), case 4
 // try to parse only 32 bytes
-func Test_pbBuffParse_2(t *testing.T) {
+func Test_PbBuffParse_2(t *testing.T) {
 	// read testing data from file
 	data, err := ioutil.ReadFile("test_data/pb_access_1.log")
 	if err != nil {
@@ -51,7 +51,7 @@ func Test_pbBuffParse_2(t *testing.T) {
 	}
 
 	// parse b2log record from data
-	records, buffer := pbBuffParse(data[0:32], nil)
+	records, buffer := PbBuffParse(data[0:32], nil)
 
 	if len(records) != 0 {
 		t.Errorf("len(records) should be 0, but now it's %d", len(records))

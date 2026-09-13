@@ -17,6 +17,7 @@ tests/integration/.integration-test-bin/
 *.swp
 *.swo
 *~
+AGENTS.md
 
 # OS
 .DS_Store

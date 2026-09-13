@@ -22,7 +22,7 @@ import (
 	bfe_access_pb "github.com/bfenetworks/bfe-access-pb/bfe_access_pb"
 )
 
-func pbBuffParse(buffer []byte, state *module_state2.State) ([]*bfe_access_pb.BfeLog, []byte) {
+func PbBuffParse(buffer []byte, state *module_state2.State) ([]*bfe_access_pb.BfeLog, []byte) {
 	var recordStrs []b2log.Record
 
 	// get records(in binary) from buffer

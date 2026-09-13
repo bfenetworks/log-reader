@@ -85,6 +85,11 @@ else
 	$(GOBUILD) -ldflags "-X main.version=$(LOG_READER_VERSION) -X main.commit=$(GIT_COMMIT) -extldflags=-static" -o log_reader ./main
 endif
 
+# make bfe-pblog-tool, build the CLI tool
+bfe-pblog-tool:
+	mkdir -p $(OUTDIR)/bin
+	$(GOBUILD) -ldflags "-X main.version=$(LOG_READER_VERSION) -X main.commit=$(GIT_COMMIT)" -o $(OUTDIR)/bin/bfe-pblog-tool ./cmd/bfe-pblog-tool
+
 # make compile-strip, go build without symbols and DWARFs
 compile-strip: test build-strip
 build-strip:
@@ -133,6 +138,11 @@ release: prepare
 		rm -rf "$${PKG_DIR}"; \
 		mkdir -p "$${PKG_DIR}/bin"; \
 		CGO_ENABLED=0 GOOS=$${GOOS} GOARCH=$${GOARCH} $(GOBUILD) -ldflags "$${LDFLAGS}" -o "$${PKG_DIR}/bin/$${BIN_NAME}" ./main; \
+		PBTOOL_NAME="bfe-pblog-tool"; \
+		if [ "$${GOOS}" = "windows" ]; then \
+			PBTOOL_NAME="bfe-pblog-tool.exe"; \
+		fi; \
+		CGO_ENABLED=0 GOOS=$${GOOS} GOARCH=$${GOARCH} $(GOBUILD) -ldflags "$${LDFLAGS}" -o "$${PKG_DIR}/bin/$${PBTOOL_NAME}" ./cmd/bfe-pblog-tool; \
 		cp -r conf "$${PKG_DIR}/"; \
 		cp readme.txt "$${PKG_DIR}/README.md"; \
 		cp LICENSE "$${PKG_DIR}/"; \
@@ -174,4 +184,4 @@ clean:
 	rm -rf $(GOPATH)/pkg/linux_amd64
 
 # avoid filename conflict and speed up build 
-.PHONY: all prepare compile test package release clean build strip compile-strip build-strip test-case vet-case coverage deps precommit check license-check license-fix prepare-dep prepare-gen
+.PHONY: all prepare compile test package release clean build strip compile-strip build-strip test-case vet-case coverage deps precommit check license-check license-fix prepare-dep prepare-gen bfe-pblog-tool

@@ -35,20 +35,20 @@ func TestNewPbLogReader(t *testing.T) {
 	}
 }
 
-func TestPbLogReader_dataBufferParse(t *testing.T) {
+func TestPbLogReader_DataBufferParse(t *testing.T) {
 	data, err := ioutil.ReadFile("test_data/pb_access_1.log")
 	if err != nil {
 		t.Fatal("fail to open testing data")
 	}
 
 	lr := NewPbLogReader("/tmp/pb_access.log", nil, "")
-	lr.dataBuffer = data
-	records := lr.dataBufferParse()
+	lr.DataBuffer = data
+	records := lr.DataBufferParse()
 	if len(records) != 9 {
 		t.Errorf("expected 9 records, got %d", len(records))
 	}
-	if len(lr.dataBuffer) != 0 {
-		t.Errorf("expected empty buffer, got %d bytes", len(lr.dataBuffer))
+	if len(lr.DataBuffer) != 0 {
+		t.Errorf("expected empty buffer, got %d bytes", len(lr.DataBuffer))
 	}
 }
 
